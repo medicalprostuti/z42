@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>যুলোজি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "নিচের কোনটি মিশ্র করোটিক স্নায়ু (Mixed cranial nerve) নয়?",
+          options: {
+            a: "গ্লসোফ্যারিঞ্জিয়াল",
+            b: "ফেসিয়াল",
+            c: "ট্রাইজেমিনাল",
+            d: "হাইপোগ্লোসাল",
+          },
+          correct: "d",
+          explanation:
+            "<p>করোটিক স্নায়ুগুলোকে (Cranial nerves) তাদের কাজের প্রকৃতির ওপর ভিত্তি করে তিন ভাগে ভাগ করা যায়: সংবেদী (Sensory), চেষ্টীয় (Motor) এবং মিশ্র (Mixed)। <strong>মিশ্র করোটিক স্নায়ু</strong> উভয় সংবেদী এবং চেষ্টীয় তন্তু ধারণ করে। গ্লসোফ্যারিঞ্জিয়াল (IX), ফেসিয়াল (VII), এবং ট্রাইজেমিনাল (V) স্নায়ুগুলো হলো মিশ্র প্রকৃতির। তবে, <strong>হাইপোগ্লোসাল (XII) স্নায়ু</strong> হলো একটি <strong>চেষ্টীয় স্নায়ু</strong>, যা মূলত জিহ্বার সঞ্চালন নিয়ন্ত্রণ করে এবং এতে কোনো সংবেদী অংশ থাকে না। তাই এটি মিশ্র স্নায়ু নয়।</p>",
+        },
+        {
+          id: 2,
+          question:
+            "প্যারাসিমপ্যাথেটিক স্নায়ু নিচের কোন করোটিক স্নায়ুতে পাওয়া যায়?",
+          options: {
+            a: "ট্রকলিয়ার",
+            b: "অপটিক",
+            c: "অকুলোমোটর",
+            d: "অলফ্যাক্টরি",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্যারাসিমপ্যাথেটিক স্নায়ুতন্ত্র (Parasympathetic nervous system) স্বয়ংক্রিয় স্নায়ুতন্ত্রের একটি অংশ যা 'বিশ্রাম ও হজম' প্রক্রিয়াগুলো নিয়ন্ত্রণ করে। কিছু করোটিক স্নায়ু প্যারাসিমপ্যাথেটিক তন্তু বহন করে। এর মধ্যে <strong>অকুলোমোটর (III) স্নায়ু</strong> অন্যতম। এই স্নায়ু চোখের পেশি নিয়ন্ত্রণ করার পাশাপাশি চোখের পিউপিল (pupil) সংকোচন এবং লেন্সের সমন্বয়ে (accommodation) প্যারাসিমপ্যাথেটিক কার্যক্রম পরিচালনা করে। ট্রকলিয়ার, অপটিক এবং অলফ্যাক্টরি স্নায়ুতে প্যারাসিমপ্যাথেটিক তন্তু পাওয়া যায় না।</p>",
+        },
+        {
+          id: 3,
+          question: "করোটিক স্নায়ুর কাজ সম্পর্কিত নিচের কোন তথ্যটি সঠিক নয়?",
+          options: {
+            a: "ট্রকলিয়ার - অক্ষিগোলকের সঞ্চালন",
+            b: "ফ্যাসিয়াল - মুখের অভিব্যক্তি",
+            c: "গ্লসোফ্যারিঞ্জিয়াল - গলবিলের সঞ্চালন",
+            d: "হাইপোগ্লোসাল - স্বাদ গ্রহণ",
+          },
+          correct: "d",
+          explanation:
+            "<p>করোটিক স্নায়ুর কাজ সম্পর্কিত সঠিক নয় এমন তথ্যটি হলো <strong>হাইপোগ্লোসাল - স্বাদ গ্রহণ</strong>। হাইপোগ্লোসাল (XII) স্নায়ু প্রধানত <strong>জিহ্বার ঐচ্ছিক পেশিগুলোর সঞ্চালন নিয়ন্ত্রণ করে</strong>, যার ফলে কথা বলা এবং খাবার গিলতে সাহায্য হয়। স্বাদ গ্রহণ মূলত ফেসিয়াল (VII), গ্লসোফ্যারিঞ্জিয়াল (IX) এবং ভেগাস (X) স্নায়ু দ্বারা সম্পন্ন হয়। অন্যান্য বিকল্পগুলো সঠিক: ট্রকলিয়ার (IV) অক্ষিগোলকের সঞ্চালন নিয়ন্ত্রণ করে, ফ্যাসিয়াল (VII) মুখের অভিব্যক্তি নিয়ন্ত্রণ করে, এবং গ্লসোফ্যারিঞ্জিয়াল (IX) গলবিলের সঞ্চালন নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 4,
+          question: "জিহ্বা থেকে স্বাদের অনুভূতি গ্রহণ করে কোন স্নায়ু?",
+          options: {
+            a: "অকুলোমোটর স্নায়ু",
+            b: "গ্লসোফ্যারিঞ্জিয়াল স্নায়ু",
+            c: "অপটিক স্নায়ু",
+            d: "ট্রাইজেমিনাল স্নায়ু",
+          },
+          correct: "b",
+          explanation:
+            "<p>জিহ্বা থেকে স্বাদের অনুভূতি গ্রহণ করার জন্য একাধিক করোটিক স্নায়ু কাজ করে। জিহ্বার পিছনের এক-তৃতীয়াংশ থেকে স্বাদের অনুভূতি প্রধানত <strong>গ্লসোফ্যারিঞ্জিয়াল (IX) স্নায়ু</strong> গ্রহণ করে। জিহ্বার সামনের দুই-তৃতীয়াংশ থেকে স্বাদ গ্রহণ করে ফেসিয়াল (VII) স্নায়ু।</p>",
+        },
+        {
+          id: 5,
+          question: "পূর্ণ সংবেদী স্নায়ু নয় কোনটি?",
+          options: {
+            a: "অলফ্যাক্টরি স্নায়ু",
+            b: "ফেসিয়াল স্নায়ু",
+            c: "অডিটরি স্নায়ু",
+            d: "অপটিক স্নায়ু",
+          },
+          correct: "b",
+          explanation:
+            "<p>পূর্ণ সংবেদী স্নায়ু (Pure sensory nerve) বলতে বোঝায় সেই স্নায়ুগুলো যা শুধুমাত্র সংবেদী তথ্য (যেমন ঘ্রাণ, দৃষ্টি, শ্রবণ) বহন করে। অলফ্যাক্টরি (I), অডিটরি (VIII), এবং অপটিক (II) স্নায়ুগুলো হলো পূর্ণ সংবেদী স্নায়ু। তবে, <strong>ফেসিয়াল (VII) স্নায়ু</strong> হলো একটি <strong>মিশ্র স্নায়ু</strong>। এটি মুখের অভিব্যক্তির জন্য চেষ্টীয় তন্তু এবং জিহ্বার সামনের অংশের স্বাদের জন্য সংবেদী তন্তু বহন করে।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "মানুষের জিহ্বায় সঞ্চালন নিয়ন্ত্রণ করে কোন করোটিক স্নায়ু?",
+          options: {
+            a: "ফেসিয়াল স্নায়ু",
+            b: "হাইপোগ্লোসাল স্নায়ু",
+            c: "অপটিক স্নায়ু",
+            d: "অকুলোমোটর স্নায়ু",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানুষের জিহ্বার ঐচ্ছিক পেশিগুলোর সঞ্চালন প্রধানত <strong>হাইপোগ্লোসাল (XII) স্নায়ু</strong> দ্বারা নিয়ন্ত্রিত হয়। এই স্নায়ুর মাধ্যমে জিহ্বার নড়াচড়া, যা কথা বলা, খাবার চিবানো এবং গিলতে অপরিহার্য, সম্পন্ন হয়।</p>",
+        },
+        {
+          id: 7,
+          question: "পাকস্থলিতে কোন করোটিক স্নায়ুর কার্যক্রম বিদ্যমান?",
+          options: {
+            a: "অপটিক",
+            b: "অডিটরি",
+            c: "ভেগাস",
+            d: "অকুলোমোটর",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>ভেগাস (X) স্নায়ু</strong> হলো দীর্ঘতম করোটিক স্নায়ু এবং এটি প্যারাসিমপ্যাথেটিক স্নায়ুতন্ত্রের একটি প্রধান অংশ। এটি গলা, বুক এবং উদরের অনেক অঙ্গের কার্যকলাপ নিয়ন্ত্রণ করে। পাকস্থলির কার্যকারিতা, যেমন হজম প্রক্রিয়া এবং পেশি সংকোচন, ভেগাস স্নায়ু দ্বারা নিয়ন্ত্রিত হয়। এটি স্বরযন্ত্র, হৃৎপিণ্ড এবং ফুসফুসেও সংকেত পাঠায়।</p>",
+        },
+        {
+          id: 8,
+          question: "মানুষের নবম জোড়া করোটিক স্নায়ুর নাম কী?",
+          options: {
+            a: "হাইপোগ্লোসাল",
+            b: "স্পাইনাল অ্যাক্সেসরি",
+            c: "অ্যাবডুসেন্স",
+            d: "গ্লসোফ্যারিঞ্জিয়াল",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানুষের নবম জোড়া করোটিক স্নায়ুর নাম হলো <strong>গ্লসোফ্যারিঞ্জিয়াল (Glossopharyngeal) স্নায়ু</strong>। এটি একটি মিশ্র স্নায়ু যা জিহ্বার পিছনের অংশের স্বাদ, গলবিলের পেশী সঞ্চালন এবং লালা গ্রন্থির কার্যকারিতা নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 9,
+          question: "মোটর প্রকৃতির স্নায়ু কোনটি?",
+          options: {
+            a: "হাইপোগ্লোসাল",
+            b: "ফেসিয়াল",
+            c: "ভেগাস",
+            d: "অপথ্যালমিক",
+          },
+          correct: "a",
+          explanation:
+            "<p>মোটর প্রকৃতির স্নায়ু (Motor nerve) হলো সেই স্নায়ু যা কেন্দ্রীয় স্নায়ুতন্ত্র থেকে পেশি বা গ্রন্থিতে সংকেত বহন করে, যার ফলে নড়াচড়া বা ক্ষরণ হয়। <strong>হাইপোগ্লোসাল (XII) স্নায়ু</strong> হলো একটি <strong>পূর্ণ চেষ্টীয় বা মোটর স্নায়ু</strong>, যা জিহ্বার পেশি নিয়ন্ত্রণ করে। ফেসিয়াল এবং ভেগাস হলো মিশ্র স্নায়ু, এবং অপথ্যালমিক ট্রাইজেমিনাল স্নায়ুর একটি সংবেদী শাখা।</p>",
+        },
+        {
+          id: 10,
+          question: "নিম্নের কোন তথ্যটি হাইপোগ্লোসাল স্নায়ুর জন্য সঠিক নয়?",
+          options: {
+            a: "উৎস: মেডুলা অবলংগাটার অঙ্কীয় দেশ",
+            b: "বিস্তার: জিহ্বা",
+            c: "প্রকৃতি: সংবেদী",
+            d: "কাজ: জিহ্বার সঞ্চালন",
+          },
+          correct: "c",
+          explanation:
+            "<p>হাইপোগ্লোসাল (XII) স্নায়ুর জন্য সঠিক নয় এমন তথ্যটি হলো <strong>প্রকৃতি: সংবেদী</strong>। হাইপোগ্লোসাল স্নায়ু হলো একটি <strong>চেষ্টীয় (Motor) স্নায়ু</strong>, যা শুধুমাত্র জিহ্বার পেশিগুলোতে সংকেত প্রেরণ করে তাদের সঞ্চালন নিয়ন্ত্রণ করে। এর কোনো সংবেদী কাজ নেই। অন্যান্য তথ্যগুলো সঠিক: এটি মেডুলা অবলংগাটার অঙ্কীয় দেশ থেকে উৎপন্ন হয়, জিহ্বায় বিস্তৃত হয় এবং জিহ্বার সঞ্চালন নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 11,
+          question: "অষ্টম করোটিকা স্নায়ুর কাজ?",
+          options: {
+            a: "মস্তিষ্কে দর্শন অনুভূতি পৌঁছানো",
+            b: "ঘ্রাণানুভূতি মস্তিষ্কে পরিবহন",
+            c: "শ্রবণ ও ভারসাম্য রক্ষা",
+            d: "চক্ষুপেশি সঞ্চালন",
+          },
+          correct: "c",
+          explanation:
+            "<p>অষ্টম করোটিক স্নায়ু হলো <strong>অডিটরি স্নায়ু (Auditory nerve)</strong> বা ভেস্টিবুলোককলিয়ার স্নায়ু (Vestibulocochlear nerve)। এই স্নায়ুর প্রধান কাজ হলো <strong>শ্রবণ (Hearing) এবং দেহের ভারসাম্য রক্ষা (Balance)</strong>। এর দুটি প্রধান শাখা রয়েছে: ককলিয়ার শাখা যা শ্রবণ নিয়ন্ত্রণ করে, এবং ভেস্টিবুলার শাখা যা ভারসাম্যে ভূমিকা রাখে।</p>",
+        },
+        {
+          id: 12,
+          question: "মানব মস্তিষ্ক থেকে উদ্ভূত করোটিক স্নায়ুর সংখ্যা কত?",
+          options: {
+            a: "১২ জোড়া",
+            b: "১০ জোড়া",
+            c: "১০ টি",
+            d: "১২ টি",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানব মস্তিষ্ক থেকে <strong>১২ জোড়া করোটিক স্নায়ু (Cranial nerves)</strong> উদ্ভূত হয়। এই স্নায়ুগুলো সরাসরি মস্তিষ্ক থেকে বের হয়ে মাথা, ঘাড় এবং শরীরের উপরের অংশে কাজ করে। প্রতিটি জোড়ার একটি অনন্য নাম এবং কার্যকারিতা রয়েছে (যেমন ঘ্রাণ, দৃষ্টি, শ্রবণ, মুখের পেশি নিয়ন্ত্রণ ইত্যাদি)।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "নিচের কোন করোটিক স্নায়ু মাথা ও কাঁধের সঞ্চালনে ভূমিকা পালন করে?",
+          options: {
+            a: "অকুলোমোটর",
+            b: "ট্রাইজেমিনাল",
+            c: "স্পাইনাল অ্যাক্সেসরি",
+            d: "হাইপোগ্লোসাল",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>স্পাইনাল অ্যাক্সেসরি (XI) স্নায়ু</strong> হলো একটি চেষ্টীয় স্নায়ু যা <strong>মাথা ও কাঁধের সঞ্চালনে</strong> গুরুত্বপূর্ণ ভূমিকা পালন করে। এটি স্টার্নোক্লেইডোম্যাস্টয়েড (sternocleidomastoid) এবং ট্রাপিজিয়াস (trapezius) পেশি নিয়ন্ত্রণ করে, যা মাথা ঘোরানো, কাঁধ উপরে তোলা এবং ব্লেড নড়াচড়ায় সাহায্য করে।</p>",
+        },
+        {
+          id: 14,
+          question: "শ্রবণ ও ভারসাম্য রক্ষায় ভূমিকা রাখে কোন স্নায়ু?",
+          options: {
+            a: "অপটিক",
+            b: "অকুলোমোটর",
+            c: "অডিটরি",
+            d: "ভ্যাগাস",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>অডিটরি (VIII) স্নায়ু</strong>, যা ভেস্টিবুলোককলিয়ার স্নায়ু নামেও পরিচিত, <strong>শ্রবণ এবং দেহের ভারসাম্য রক্ষায়</strong> ভূমিকা রাখে। এর ককলিয়ার অংশ কানের ককলিয়া থেকে শ্রবণের সংকেত মস্তিষ্কে পাঠায়, এবং ভেস্টিবুলার অংশ ভারসাম্য বজায় রাখার জন্য কানের ভেস্টিবুলার যন্ত্র থেকে সংকেত পরিবহন করে।</p>",
+        },
+        {
+          id: 15,
+          question: "স্বাদ গ্রহণের সাথে সম্পর্কিত স্নায়ু কোনটি?",
+          options: {
+            a: "ফেসিয়াল",
+            b: "ট্রকলিয়ার",
+            c: "অলফ্যাক্টরি",
+            d: "অপটিক",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>ফেসিয়াল (VII) স্নায়ু</strong> জিহ্বার সামনের দুই-তৃতীয়াংশ থেকে <strong>স্বাদ গ্রহণ</strong> করে। এটি মুখের অভিব্যক্তি নিয়ন্ত্রণকারী চেষ্টীয় স্নায়ু হিসেবেও কাজ করে। অন্যান্য স্নায়ুগুলো স্বাদের সাথে সরাসরি সম্পর্কিত নয়: ট্রকলিয়ার চোখের পেশি, অলফ্যাক্টরি ঘ্রাণ এবং অপটিক দৃষ্টি নিয়ন্ত্রণ করে।</p>",
+        },
+        {
+          id: 16,
+          question: "V নং করোটিক স্নায়ুর নাম কী?",
+          options: {
+            a: "অকুলোমোটর",
+            b: "ট্রকলিয়ার",
+            c: "অডিটরি",
+            d: "ট্রাইজেমিনাল",
+          },
+          correct: "d",
+          explanation:
+            "<p>V নং করোটিক স্নায়ুর নাম হলো <strong>ট্রাইজেমিনাল (Trigeminal) স্নায়ু</strong>। এটি মুখের সংবেদনশীলতা (যেমন স্পর্শ, ব্যথা, তাপমাত্রা) এবং চিবানোর পেশিগুলোর সঞ্চালন নিয়ন্ত্রণকারী একটি মিশ্র স্নায়ু।</p>",
+        },
+        {
+          id: 17,
+          question: "নিচের কোনটি মিশ্র প্রকৃতির করোটিক স্নায়ু?",
+          options: {
+            a: "অপটিক",
+            b: "ট্রকলিয়ার",
+            c: "অডিটরি",
+            d: "ভেগাস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মিশ্র প্রকৃতির করোটিক স্নায়ু (Mixed cranial nerve) হলো সেই স্নায়ু যা সংবেদী এবং চেষ্টীয় উভয় তন্তু ধারণ করে। <strong>ভেগাস (X) স্নায়ু</strong> হলো একটি প্রধান মিশ্র স্নায়ু। এটি গলা, বুক এবং উদরের বিভিন্ন অঙ্গের সংবেদনশীলতা এবং পেশী নিয়ন্ত্রণ করে। অপটিক, ট্রকলিয়ার এবং অডিটরি যথাক্রমে সংবেদী, চেষ্টীয় এবং সংবেদী প্রকৃতির স্নায়ু।</p>",
+        },
+        {
+          id: 18,
+          question: "কোন স্নায়ু অক্ষিগোলকের সঞ্চালন নিয়ন্ত্রণ করে?",
+          options: {
+            a: "ভ্যাগাস",
+            b: "অ্যাবডুসেন্স",
+            c: "ফ্যাসিয়াল",
+            d: "অলফ্যাক্টরি",
+          },
+          correct: "b",
+          explanation:
+            "<p>অক্ষিগোলকের (Eyeball) সঞ্চালন নিয়ন্ত্রণ করার জন্য তিনটি করোটিক স্নায়ু দায়ী: অকুলোমোটর (III), ট্রকলিয়ার (IV), এবং অ্যাবডুসেন্স (VI)। এর মধ্যে <strong>অ্যাবডুসেন্স (VI) স্নায়ু</strong> হলো সেই স্নায়ু যা ল্যাটারাল রেকটাস পেশি (lateral rectus muscle) নিয়ন্ত্রণ করে এবং চোখকে পাশ থেকে বাইরের দিকে সরাতে সাহায্য করে।</p>",
+        },
+        {
+          id: 19,
+          question: "কোনটি ১০ম করোটিক স্নায়ুর শাখা?",
+          options: {
+            a: "প্যালেটাইন",
+            b: "পালমোনারি",
+            c: "ম্যাক্সিলারি",
+            d: "ম্যান্ডিবুলার",
+          },
+          correct: "b",
+          explanation:
+            "<p>১০ম করোটিক স্নায়ু হলো <strong>ভেগাস (Vagus) স্নায়ু</strong>। এটি একটি বিস্তৃত স্নায়ু যা ঘাড়, বুক এবং উদরের অনেক অঙ্গের কার্যকলাপ নিয়ন্ত্রণ করে। এর বিভিন্ন শাখার মধ্যে <strong>পালমোনারি (Pulmonary) শাখা</strong> রয়েছে, যা ফুসফুসের কার্যকারিতা নিয়ন্ত্রণ করে। প্যালেটাইন, ম্যাক্সিলারি এবং ম্যান্ডিবুলার ট্রাইজেমিনাল স্নায়ু (V) বা ফেসিয়াল স্নায়ুর (VII) শাখা হতে পারে।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "দেহের ভারসাম্য রক্ষার অনুভূতি গ্রহণ করে কত নম্বর স্নায়ুর মাধ্যমে?",
+          options: {
+            a: "VII",
+            b: "VIII",
+            c: "IX",
+            d: "X",
+          },
+          correct: "b",
+          explanation:
+            "<p>দেহের ভারসাম্য রক্ষার অনুভূতি <strong>VIII নম্বর করোটিক স্নায়ু (Vesitbulocochlear nerve)</strong> দ্বারা গ্রহণ করা হয়। এই স্নায়ুর ভেস্টিবুলার অংশ (vestibular portion) কানের ভেস্টিবুলার সিস্টেম থেকে ভারসাম্য সম্পর্কিত তথ্য মস্তিষ্কে প্রেরণ করে।</p>",
+        },
+        {
+          id: 21,
+          question: "মস্তিষ্কে ঘ্রাণ উদ্দীপনা সৃষ্টি করে কোন স্নায়ু?",
+          options: {
+            a: "অকুলোমোটর",
+            b: "ট্রাইজেমিনাল",
+            c: "হাইপোগ্লোসাল",
+            d: "অলফ্যাক্টরি",
+          },
+          correct: "d",
+          explanation:
+            "<p>মস্তিষ্কে ঘ্রাণ উদ্দীপনা (Smell sensation) সৃষ্টি করে <strong>অলফ্যাক্টরি (I) স্নায়ু</strong>। এটি একটি পূর্ণ সংবেদী স্নায়ু যা নাকের অলফ্যাক্টরি রিসেপ্টর (olfactory receptors) থেকে ঘ্রাণ সম্পর্কিত তথ্য মস্তিষ্কে পরিবহন করে।</p>",
+        },
+        {
+          id: 22,
+          question: "অষ্টম করোটিক স্নায়ু কোনটি?",
+          options: {
+            a: "অলফ্যাক্টরি",
+            b: "অডিটরি",
+            c: "ফেসিয়াল",
+            d: "ট্রাইজেমিনাল",
+          },
+          correct: "b",
+          explanation:
+            "<p>অষ্টম করোটিক স্নায়ুর নাম হলো <strong>অডিটরি (Auditory) স্নায়ু</strong>, যা ভেস্টিবুলোককলিয়ার স্নায়ু নামেও পরিচিত। এই স্নায়ু শ্রবণ এবং ভারসাম্য উভয় কার্যকারিতায় জড়িত।</p>",
+        },
+        {
+          id: 23,
+          question: "অষ্টম করোটিক স্নায়ুর কাজ কী?",
+          options: {
+            a: "স্বাদ",
+            b: "দর্শন",
+            c: "শ্রবণ",
+            d: "ঘ্রাণ",
+          },
+          correct: "c",
+          explanation:
+            "<p>অষ্টম করোটিক স্নায়ু (অডিটরি বা ভেস্টিবুলোককলিয়ার স্নায়ু) এর প্রধান কাজ হলো <strong>শ্রবণ (Hearing)</strong> এবং ভারসাম্য (Balance) রক্ষা করা।</p>",
+        },
+        {
+          id: 24,
+          question: "কোনটি চেষ্টীয় স্নায়ু?",
+          options: {
+            a: "অপটিক",
+            b: "ভেগাস",
+            c: "অডিটরি",
+            d: "অ্যাবডুসেন্স",
+          },
+          correct: "d",
+          explanation:
+            "<p>চেষ্টীয় স্নায়ু (Motor nerve) হলো সেই স্নায়ু যা কেন্দ্রীয় স্নায়ুতন্ত্র থেকে পেশি বা গ্রন্থিতে সংকেত বহন করে। <strong>অ্যাবডুসেন্স (VI) স্নায়ু</strong> হলো একটি চেষ্টীয় স্নায়ু যা চোখের ল্যাটারাল রেকটাস পেশি নিয়ন্ত্রণ করে, যা চোখকে বাইরের দিকে সরাতে সাহায্য করে। অপটিক এবং অডিটরি সংবেদী, আর ভেগাস মিশ্র প্রকৃতির স্নায়ু।</p>",
+        },
+        {
+          id: 25,
+          question: "কোনটি মিশ্র স্নায়ু?",
+          options: {
+            a: "অকুলোমোটর",
+            b: "ট্রকলিয়ার",
+            c: "অডিটরি",
+            d: "ভেগাস",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>মিশ্র স্নায়ু (Mixed nerve)</strong> হলো সেই স্নায়ু যা সংবেদী এবং চেষ্টীয় উভয় ধরনের তন্তু ধারণ করে। <strong>ভেগাস (X) স্নায়ু</strong> হলো একটি প্রধান মিশ্র করোটিক স্নায়ু। অকুলোমোটর এবং ট্রকলিয়ার প্রধানত চেষ্টীয়, আর অডিটরি প্রধানত সংবেদী স্নায়ু।</p>",
+        },
+        {
+          id: 26,
+          question: "মানুষের করোটিক স্নায়ু সংখ্যা কয়টি?",
+          options: {
+            a: "১০টি",
+            b: "১২টি",
+            c: "২০টি",
+            d: "২৪টি",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানুষের করোটিক স্নায়ুর সংখ্যা হলো <strong>১২ জোড়া</strong>। যেহেতু প্রতিটি জোড়ায় দুটি স্নায়ু থাকে (বাম এবং ডান), মোট সংখ্যা হলো <strong>২৪টি</strong> (১২ জোড়া × ২)।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "কত নম্বর করোটিক স্নায়ুর কার্যকারিতায় মুখের অভিব্যক্তি প্রকাশিত হয়?",
+          options: {
+            a: "VI",
+            b: "VII",
+            c: "VIII",
+            d: "IX",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>VII নম্বর করোটিক স্নায়ু</strong> হলো <strong>ফেসিয়াল (Facial) স্নায়ু</strong>। এই স্নায়ুর প্রধান কাজ হলো <strong>মুখের অভিব্যক্তি (Facial expressions)</strong> নিয়ন্ত্রণ করা, যেমন হাসি, কান্না, ভ্রু কুঁচকানো ইত্যাদি।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                            <label class="option" data-option="${option}">
+                              <div class="circle">${option}</div>
+                              <span class="option-text">${question.options[option]}</span>
+                            </label>
+                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                               <div class="explanation-content">
+                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                 ${question.explanation}
+                               </div>
+                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                          <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                          <div class="options">
+                            ${optionsHTML}
+                          </div>
+                          ${explanationHTML}
+                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
